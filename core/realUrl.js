@@ -4,7 +4,7 @@ const log = require('../lib/log')
 
 // 根据传来的百度结果链接解析为真实地址并返回  （√ 无bug）
 
-module.exports = function (link) {
+module.exports = function (link, v) {
   return new Promise((resolve, reject) => {
     let r = ora(``)
     try{
@@ -26,11 +26,11 @@ module.exports = function (link) {
         res.on('data', (chunk) => { rawData += chunk })
         res.on('end', () => {
           if (res.headers['location']) {
-            // r.succeed(res.headers['location'])
+            if (v) r.succeed(res.headers['location'])
             resolve(res.headers['location'])
           }
           else if (rawData.match(/http.*\)/)) {
-            // r.succeed(rawData.match(/http.*\)/)[0].slice(0, -2))
+            if (v) r.succeed(rawData.match(/http.*\)/)[0].slice(0, -2))
             resolve(rawData.match(/http.*\)/)[0].slice(0, -2))
           } else {
             log.err(link)

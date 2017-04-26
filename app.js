@@ -6,10 +6,10 @@ const log = require('./lib/log')
 
 prop
   .version('0.1')
-  .option('-d, --deep [value]', '抓取的页数')
-  .option('-u, --url [value]', '匹配url')
-  .option('-k, --keyword [value]', '指定关键字搜索')
-  .option('-v, --verbose', '显示处理过程')
+  .option('-u, --url [value]', '检索匹配的url')
+  .option('-k, --keyword [value]', '指定关键词，多个关键词请用英文","隔开')
+  .option('-d, --deep [value]', '抓取的页数，最大值为8')
+  .option('-v, --verbose', '显示详细抓取过程')
   .parse(process.argv);
 
 const keywordsFile = 'keywords.txt'
@@ -19,6 +19,17 @@ if (prop.url) {
   if (prop.deep) {
     opt.deep = prop.deep
     opt.url = prop.url
+  }
+  if (prop.keyword) {
+    const fs = require('fs')
+    let keywords = prop.keyword
+    if (keywords.indexOf(',') !== -1){
+      keywords = keywords.replace(',', '\n')
+    }
+    fs.writeFileSync(keywordsFile, keywords)
+  }
+  if (prop.verbose) {
+    opt.v = true
   } else {
     opt.deep = 3
     opt.url = prop.url
@@ -30,7 +41,7 @@ function main(opt) {
   cleanLog()
   let s = ora(`正在查询与${opt.url}的匹配结果...`).start()
   let searchList = load(keywordsFile, opt.deep)
-  searcher(searchList).then(res => {
+  searcher(searchList, opt.v).then(res => {
     let result = []
     for (let i = 0; i < res.length; i++) {
       let singlePage = res[i]['res'];

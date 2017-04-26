@@ -7,9 +7,9 @@ const log = require('../lib/log')
 // 请求所提供的网址，并解析出真实地址以list返回(一页)
 // list: [{ name, url }, ...]
 
-module.exports = function (url, keyword) {
+module.exports = function (url, keyword, v) {
   return new Promise((resolve, reject) => {
-    httpGet(url, keyword).then(res => {
+    httpGet(url, keyword, v).then(res => {
       if (res === 0) {
         log.err(url)
       }
@@ -19,7 +19,7 @@ module.exports = function (url, keyword) {
 }
 
 // 发起请求
-function httpGet(url, keyword) {
+function httpGet(url, keyword, v) {
   return new Promise((resolve, reject) => {
     try {
     let req =  http.get(url, (res) => {
@@ -42,7 +42,7 @@ function httpGet(url, keyword) {
           try {
             // getting.succeed(`[${req.keyword}]请求完成，用时:` + (new Date().getTime() - t0) + 'ms')
             let links = getLinks(rawData)
-            getReal(links).then(ress => {
+            getReal(links, v).then(ress => {
               resolve(ress)
             })
           } catch (e) {
@@ -84,7 +84,7 @@ function getLinks(html) {
 // 获取真实地址
 // arr:[{name, url}, ...]
 
-function getReal(links) {
+function getReal(links, v) {
   //links:[{name, url}, ...]
   let c0 = 0
   return new Promise(resolve => {
@@ -92,7 +92,7 @@ function getReal(links) {
     for (let i = 0; i < links.length; i++) {
       let url = links[i]['url']
       // let realTip = ora('正在解析真实地址'+url)
-      realUrl(url).then(function (res) {
+      realUrl(url, v).then(function (res) {
         c0++
         arr.push({
           name: links[i].name,
