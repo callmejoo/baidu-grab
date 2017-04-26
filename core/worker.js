@@ -2,17 +2,18 @@ const http = require('http')
 const cheerio = require('cheerio')
 const ora = require('ora')
 const realUrl = require('./realUrl')
+const log = require('../lib/log')
 
 // 请求所提供的网址，并解析出真实地址以list返回(一页)
-// list
+// list: [{ name, url }, ...]
 
 module.exports = function (url, keyword) {
   return new Promise((resolve, reject) => {
-    httpGet(url).then(res => {
+    httpGet(url, keyword).then(res => {
+      if (res === 0) {
+        log.err(url)
+      }
       resolve(res)
-    }).catch(err => {
-      // q.fail(`----------[${err}]----------`)
-      reject(err)
     })
   })
 }
@@ -20,31 +21,44 @@ module.exports = function (url, keyword) {
 // 发起请求
 function httpGet(url, keyword) {
   return new Promise((resolve, reject) => {
-    http.get(url, (res) => {
-      let { statusCode } = res
-      if (statusCode !== 200) {
-        reject(`[${statusCode}]` + req.url)
-        res.resume()
-        return
-      }
-      res.setEncoding('utf8')
-      let rawData = ''
-      let t0 = new Date().getTime()
-      res.on('data', (chunk) => { rawData += chunk })
-      res.on('end', () => {
-        try {
-          // getting.succeed(`[${req.keyword}]请求完成，用时:` + (new Date().getTime() - t0) + 'ms')
-          let links = getLinks(rawData)
-          getReal(links).then(res => {
-            resolve(res)
-          })      
-        } catch (e) {
-          reject(new Error(e.message))
+    try {
+    let req =  http.get(url, (res) => {
+        let { statusCode } = res
+        if (statusCode !== 200) {
+          reject(`[${statusCode}]` + req.url)
+          res.resume()
+          return
         }
-      }).on('error', (e) => {
-        reject(new Error(e.message))
+        res.setTimeout(5000, () => {
+          log.err(url)
+          resolve(0)
+        })
+        res.setEncoding('utf8')
+        let rawData = ''
+        // let t0 = new Date().getTime()
+        res.on('data', (chunk) => { rawData += chunk })
+        res.on('end', () => {
+          try {
+            // getting.succeed(`[${req.keyword}]请求完成，用时:` + (new Date().getTime() - t0) + 'ms')
+            let links = getLinks(rawData)
+            getReal(links).then(res => {
+              resolve(res)
+            })
+          } catch (e) {
+            resolve(0)
+          }
+        }).on('error', (e) => {
+          resolve(0)
+        })
       })
+    req.setTimeout(8000, () => {
+      log.err(url)
+      resolve(0)
     })
+    } catch (e) {
+      log.err(url)  
+      resolve(0)
+    }
   })
 }
 
@@ -87,7 +101,17 @@ function getReal(links) {
         if (c0 === links.length) {
           resolve(arr)
         }
-      }).catch(err => {})
+      }).catch(err => {
+        c0++
+        // realTip.succeed(res)
+        arr.push({
+          name: links[i].name,
+          url: 0
+        })
+        if (c0 === links.length) {
+          resolve(arr)
+        }
+      })
       // realTip.stop()
     }
   })

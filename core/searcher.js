@@ -13,40 +13,49 @@ module.exports = function (requests) {
     for (let i in requests) {
       let key = requests[i]['keyword']
       let k = ora()
-      k.succeed(`查询关键字[${key}]`)
+      k.succeed(`查询关键字【${key}】`)
       // 抓取第一页
       worker(requests[i]['url1'], key + '第1页').then(res => {
         result.push({ keyword: key + '第1页', res: res })
-          d++
-          if ((d % 3) === 0) {
-            t++
-            if (t === l) {
-              resolve(result)
-            }
+        if (res === 0) {
+          k.fail(`查询【${key}】第1页错误`)
+        }
+        d++
+        if ((d % 3) === 0) {
+          t++
+          if (t === l) {
+            resolve(result)
           }
-      }).catch(err => { })
+        }
+      })
       // 抓取第二页
       worker(requests[i]['url2'], key + '第2页').then(res => {
         result.push({ keyword: key + '第2页', res: res })
-          d++
-          if ((d % 3) === 0) {
-            t++
-            if (t === l) {
-              resolve(result)
-            }
+        if (res === 0) {
+            k.fail(`查询关键字【${key}】第2页错误`)
+        }
+        d++
+        if ((d % 3) === 0) {
+          t++
+          if (t === l) {
+            resolve(result)
           }
-      }).catch(err => { })
+        }
+      })
       // 抓取第三页
       worker(requests[i]['url3'], key + '第3页').then(res => {
         result.push({ keyword: key + '第3页', res: res })
-          d++
-          if ((d % 3) === 0) {
-            t++
-            if (t === l) {
-              resolve(result)
-            }
+        if (res === 0) {
+            k.fail(`查询关键字【${key}】第3页错误`)
+        }
+        d++
+        if ((d % 3) === 0) {
+          t++
+          if (t === l) {
+            resolve(result)
           }
-      }).catch(err => { })
+        }
+      })
     }
   })
 }
