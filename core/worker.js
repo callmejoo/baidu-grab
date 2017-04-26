@@ -25,7 +25,8 @@ function httpGet(url, keyword) {
     let req =  http.get(url, (res) => {
         let { statusCode } = res
         if (statusCode !== 200) {
-          reject(`[${statusCode}]` + req.url)
+          resolve(0)
+          ora().fail(`[${statusCode}]` + req.url)
           res.resume()
           return
         }
@@ -41,8 +42,8 @@ function httpGet(url, keyword) {
           try {
             // getting.succeed(`[${req.keyword}]请求完成，用时:` + (new Date().getTime() - t0) + 'ms')
             let links = getLinks(rawData)
-            getReal(links).then(res => {
-              resolve(res)
+            getReal(links).then(ress => {
+              resolve(ress)
             })
           } catch (e) {
             resolve(0)
@@ -93,7 +94,6 @@ function getReal(links) {
       // let realTip = ora('正在解析真实地址'+url)
       realUrl(url).then(function (res) {
         c0++
-        // realTip.succeed(res)
         arr.push({
           name: links[i].name,
           url: res
@@ -103,7 +103,6 @@ function getReal(links) {
         }
       }).catch(err => {
         c0++
-        // realTip.succeed(res)
         arr.push({
           name: links[i].name,
           url: 0

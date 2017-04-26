@@ -46,7 +46,7 @@ module.exports = function (link) {
       })
      req.setTimeout(5000, () => {
         log.err(link)
-        r.fail(`解析${link}出错（请求超时）。`)
+        r.fail(`解析以下链接时出错（请求超时）↓↓↓\n${link}`)
         reject(0)
       })
     } catch (e) {
