@@ -7,7 +7,7 @@ const log = require('./lib/log')
 prop
     .version('0.1')
     .option('-u, --url [value]', '检索匹配的url')
-    .option('-k, --keyword [value]', '指定关键词，多个关键词请用英文","隔开')
+    .option('-k, --keyword [value]', '指定关键词查询，多个关键词请用英文","隔开。如无-u参数则会返回此关键词的所有结果')
     .option('-d, --deep [value]', '抓取的页数，最大值为8')
     .option('-v, --verbose', '显示详细抓取过程')
     .parse(process.argv);
@@ -36,14 +36,45 @@ if (prop.url) {
         opt.url = prop.url
     }
     main(opt)
-} else {
+} else if (prop.keyword) {
+    opt.keyword = prop.keyword
+    const fs = require('fs')
+    let keywords = prop.keyword
+    if (keywords.indexOf(',') !== -1) {
+        keywords = keywords.replace(',', '\n')
+    }
+    fs.writeFileSync(keywordsFile, keywords)
+    if (prop.url) {
+        opt.url = prop.url
+    }
+    if (prop.deep) {
+        opt.deep = prop.deep
+    }
+    if (prop.verbose) {
+        opt.v = true
+    } else {
+        opt.deep = 3
+    }
+    main(opt)
+}
+else {
     prop.help()
 }
 
 function main(opt) {
+    console.log(opt)
     let t0 = new Date().getTime()
     cleanLog()
-    let s = ora(`正在查询与${opt.url}的匹配结果...`).start()
+    let tip = ``
+    if (opt.url) {
+        tip = `正在查询与${opt.url}的匹配结果...`
+    }
+    else if (opt.keyword) {
+        tip = `正在查询与【${opt.keyword}】的匹配结果...`
+    } else {
+        tip = `正在查询...`
+    }
+    let s = ora(tip).start()
     let searchList = load(keywordsFile, opt.deep)
     searcher(searchList, opt.v).then(res => {
         let result = []
@@ -53,14 +84,23 @@ function main(opt) {
                 hasErr = true
             }
             for (let a = 0; a < singlePage.length; a++) {
-                if (singlePage[a]['url'] === 0) {
-                    hasErr = true
-                } else if (singlePage[a]['url'].indexOf(opt.url) !== -1) {
-                    result.push({
-                        title: singlePage[a]['name'],
-                        link: singlePage[a]['url']
-                    })
+              if (singlePage[a]['url'] === 0) {
+                hasErr = true
+              }
+              if (opt.url && opt.keyword) {
+                if (singlePage[a]['url'].indexOf(opt.url) !== -1) {
+                  result.push({
+                    title: singlePage[a]['name'],
+                    link: singlePage[a]['url']
+                  })
                 }
+              }
+              else if (opt.keyword && !opt.url) {
+                result.push({
+                    title: singlePage[a]['name'],
+                    link: singlePage[a]['url']
+                  })
+              }
             }
         }
         printRes(result, s, t0)
