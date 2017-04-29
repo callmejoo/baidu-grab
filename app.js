@@ -32,7 +32,9 @@ if (prop.url) {
     if (prop.verbose) {
         opt.v = true
     } else {
+      if (opt.deep > 8) {
         opt.deep = 3
+      }
         opt.url = prop.url
     }
     main(opt)
@@ -53,7 +55,9 @@ if (prop.url) {
     if (prop.verbose) {
         opt.v = true
     } else {
+      if (opt.deep > 8) {
         opt.deep = 3
+      }
     }
     main(opt)
 }
@@ -62,7 +66,6 @@ else {
 }
 
 function main(opt) {
-    console.log(opt)
     let t0 = new Date().getTime()
     cleanLog()
     let tip = ``
@@ -87,7 +90,7 @@ function main(opt) {
               if (singlePage[a]['url'] === 0) {
                 hasErr = true
               }
-              if (opt.url && opt.keyword) {
+              if (opt.url && !opt.keyword) {
                 if (singlePage[a]['url'].indexOf(opt.url) !== -1) {
                   result.push({
                     title: singlePage[a]['name'],

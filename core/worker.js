@@ -3,6 +3,7 @@ const cheerio = require('cheerio')
 const ora = require('ora')
 const realUrl = require('./realUrl')
 const log = require('../lib/log')
+const getAbout = require('./getAbout')
 
 // 请求所提供的网址，并解析出真实地址以list返回(一页)
 // list: [{ name, url }, ...]
@@ -93,13 +94,30 @@ function getReal(links, v) {
       let url = links[i]['url']
       // let realTip = ora('正在解析真实地址'+url)
       realUrl(url, v).then(function (res) {
-        c0++
-        arr.push({
-          name: links[i].name,
-          url: res
-        })
-        if (c0 === links.length) {
-          resolve(arr)
+        if (res.indexOf('zhidao.baidu.com/question') !== -1) {
+          getAbout(res).then(ress => {
+            c0++
+            for (let a = 0; a < ress.length; a++) {
+              arr.push({
+                name: '【相似问题】：' + ress[a].name,
+                url: ress[a].url
+              })
+            }
+            if (c0 === links.length) {
+              resolve(arr)
+            }
+          }).catch(err => {
+            resolve(arr)
+          })
+        } else {
+          c0++
+          arr.push({
+            name: links[i].name,
+            url: res
+          })
+          if (c0 === links.length) {
+            resolve(arr)
+          }
         }
       }).catch(err => {
         c0++
