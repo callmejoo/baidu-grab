@@ -33,6 +33,8 @@ if (prop.url) {
         opt.v = true
     } else {
       if (opt.deep > 8) {
+        opt.deep = 8
+      } else {
         opt.deep = 3
       }
         opt.url = prop.url

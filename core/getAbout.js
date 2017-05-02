@@ -14,16 +14,15 @@ module.exports = function (url) {
         res.resume()
         return
       }
-      res.setEncoding('binary')
       res.setTimeout(5000, () => {
         log.err(link)
         r.fail(`解析${link}出错（响应超时）。`)
         reject(0)
       })
-      let rawData = ''
-      res.on('data', chunk => { rawData += chunk })
+      let rawData = []
+      res.on('data', chunk => { rawData.push(chunk) })
       res.on('end', () => {
-        let Data = iconv.decode(rawData, 'gbk')
+        let Data = iconv.decode(Buffer.concat(rawData), 'gbk')
         let $ = cheerio.load(Data)
         let el = $('#wgt-related li')
         let arr = []

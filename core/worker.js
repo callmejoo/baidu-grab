@@ -95,7 +95,12 @@ function getReal(links, v) {
       // let realTip = ora('正在解析真实地址'+url)
       realUrl(url, v).then(function (res) {
         if (res.indexOf('zhidao.baidu.com/question') !== -1) {
+          arr.push({
+            name: links[i].name,
+            url: res
+          })
           getAbout(res).then(ress => {
+            
             c0++
             for (let a = 0; a < ress.length; a++) {
               arr.push({

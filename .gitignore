@@ -1,3 +1,5 @@
 node_modules/*
 .vscode/*
+.vs/*
 err.log
+使用说明.txt
