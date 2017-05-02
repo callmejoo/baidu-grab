@@ -1,43 +1,41 @@
-const load = require('./lib/load')
-const searcher = require('./core/searcher')
+const master = require('./core/master')
+// const searcher = require('./core/searcher')
 const prop = require('commander')
 const ora = require('ora')
 const log = require('./lib/log')
 
 prop
-    .version('0.1')
-    .option('-u, --url [value]', '检索匹配的url')
-    .option('-k, --keyword [value]', '指定关键词查询，多个关键词请用英文","隔开。如无-u参数则会返回此关键词的所有结果')
-    .option('-d, --deep [value]', '抓取的页数，最大值为8')
-    .option('-v, --verbose', '显示详细抓取过程')
-    .parse(process.argv);
+  .version('0.1')
+  .option('-u, --url [value]', '检索匹配的url')
+  .option('-k, --keyword [value]', '指定关键词查询，多个关键词请用英文","隔开。如无-u参数则会返回此关键词的所有结果')
+  .option('-d, --deep [value]', '抓取的页数，最大值为8')
+  .option('-t, --thread [value]', '同时执行查询的线程数，数值越大查询越快，但同时也越不稳定。默认值为2，最大值为5')
+  .option('-v, --verbose', '显示详细抓取过程')
+  .parse(process.argv);
 
 const keywordsFile = 'keywords.txt'
 let opt = {}
 let hasErr = false
-
+prop.url = 'zhidao.baidu.com'
 if (prop.url) {
     if (prop.deep) {
+      if (prop.deep > 8) {
+        opt.deep = 8
+      } else {
         opt.deep = prop.deep
-        opt.url = prop.url
+      }
+      opt.url = prop.url
     }
     if (prop.keyword) {
-        const fs = require('fs')
-        let keywords = prop.keyword
-        if (keywords.indexOf(',') !== -1) {
-            keywords = keywords.replace(',', '\n')
-        }
-        fs.writeFileSync(keywordsFile, keywords)
+      const fs = require('fs')
+      let keywords = prop.keyword
+      if (keywords.indexOf(',') !== -1) {
+          keywords = keywords.replace(',', '\n')
+      }
+      fs.writeFileSync(keywordsFile, keywords)
     }
     if (prop.verbose) {
         opt.v = true
-    } else {
-      if (opt.deep > 8) {
-        opt.deep = 8
-      } else {
-        opt.deep = 3
-      }
-        opt.url = prop.url
     }
     main(opt)
 } else if (prop.keyword) {
@@ -52,14 +50,14 @@ if (prop.url) {
         opt.url = prop.url
     }
     if (prop.deep) {
+      if (prop.deep > 8) {
+        opt.deep = 8
+      } else {
         opt.deep = prop.deep
+      }
     }
     if (prop.verbose) {
         opt.v = true
-    } else {
-      if (opt.deep > 8) {
-        opt.deep = 3
-      }
     }
     main(opt)
 }
@@ -67,49 +65,55 @@ else {
     prop.help()
 }
 
-function main(opt) {
-    let t0 = new Date().getTime()
-    cleanLog()
-    let tip = ``
-    if (opt.url) {
-        tip = `正在查询与${opt.url}的匹配结果...`
-    }
-    else if (opt.keyword) {
-        tip = `正在查询与【${opt.keyword}】的匹配结果...`
-    } else {
-        tip = `正在查询...`
-    }
-    let s = ora(tip).start()
-    let searchList = load(keywordsFile, opt.deep)
-    searcher(searchList, opt.v).then(res => {
-        let result = []
-        for (let i = 0; i < res.length; i++) {
-            let singlePage = res[i]['res'];
-            if (singlePage === 0) {
-                hasErr = true
-            }
-            for (let a = 0; a < singlePage.length; a++) {
-              if (singlePage[a]['url'] === 0) {
-                hasErr = true
-              }
-              if (opt.url && !opt.keyword) {
-                if (singlePage[a]['url'].indexOf(opt.url) !== -1) {
-                  result.push({
-                    title: singlePage[a]['name'],
-                    link: singlePage[a]['url']
-                  })
-                }
-              }
-              else if (opt.keyword && !opt.url) {
-                result.push({
-                    title: singlePage[a]['name'],
-                    link: singlePage[a]['url']
-                  })
-              }
-            }
-        }
-        printRes(result, s, t0)
-    })
+async function main(opt) {
+  if (!opt.deep) opt.deep = 3
+  prop.thread ? thread = prop.thread : thread = 2
+  let t0 = new Date().getTime()
+  cleanLog()
+  let tip = ``
+  if (opt.url) {
+      tip = `查询与${opt.url}的匹配结果...`
+  }
+  else if (opt.keyword) {
+      tip = `查询与【${opt.keyword}】的匹配结果...`
+  } else {
+      tip = `正在查询...`
+  }
+  let s = ora()
+  s.succeed(tip)
+  let result = await master(keywordsFile, opt.deep, opt.thread, opt.v)
+  console.log(result)
+  // let result = []
+  // for (let i = 0; i < res.length; i++) {
+  //   if (res[i] === 0) {
+  //     hasErr = true
+  //   } else {
+  //     let singlePage = res[i]['res'];
+  //     if (singlePage === 0) {
+  //         hasErr = true
+  //     }
+  //     for (let a = 0; a < singlePage.length; a++) {
+  //       if (singlePage[a]['url'] === 0) {
+  //         hasErr = true
+  //       }
+  //       if (opt.url && !opt.keyword) {
+  //         if (singlePage[a]['url'].indexOf(opt.url) !== -1) {
+  //         result.push({
+  //           title: singlePage[a]['name'],
+  //           link: singlePage[a]['url']
+  //         })
+  //         }
+  //       }
+  //       else if (opt.keyword && !opt.url) {
+  //         result.push({
+  //           title: singlePage[a]['name'],
+  //           link: singlePage[a]['url']
+  //         })
+  //       }
+  //     }
+  //   }
+  // }
+  // printRes(result, s, t0)
 }
 
 function printRes(result, s, t) {
