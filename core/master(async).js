@@ -3,7 +3,6 @@ const urlencode = require('urlencode')
 const ora = require('ora')
 const getPage = require('../lib/page')
 const worker = require('./worker')
-const getZdAbout = require('../lib/bdzdAbout.js')
 
 const numCpus = require('os').cpus().length
 const engin = 'http://www.baidu.com'
@@ -35,8 +34,7 @@ module.exports = async function (path, deep, thread, v) {
 
       // 抓取当前关键词分页链接
 
-      urls.push({ url: url1, status: 0 })
-      let res = []
+      urls.push({url: url1, status: 0 })
       try {
         res = await getPage(url1)
       } catch (e) {
@@ -58,37 +56,34 @@ module.exports = async function (path, deep, thread, v) {
 
     let singlePage = list[i] // Obj：{keyword, urls[{url, status}, ...], status}
     let allRealLinks = []
-    for (let i = 0; i < singlePage['urls'].length; i++) {
-      try {
-        let realList = await worker(singlePage['urls'][i], singlePage['keyword'])
-        if (global.verbose) ora().succeed(`关键词【${singlePage['keyword']}】真实地址获取成功`)
-        for (let index in realList) {
-
-          // 检查是否有百度知道链接，如有则获取相关问题。
-
-          if (realList[index]['url'].indexOf('zhidao.baidu.com/question') !== -1) {
-            allRealLinks.push(realList[index])
-            let zhidaoAbout = await getZdAbout(realList[index]['url'])
-            for (let p in zhidaoAbout) {
-              allRealLinks.push({
-                name: '【相似问题】' + zhidaoAbout[p]['name'],
-                url: zhidaoAbout[p]['url'],
-                keyword: singlePage['keyword'],
-                status: 1
-              })
-            }
-          } else {
-            allRealLinks.push(realList[index])
-          }
-        }
-      } catch (e) {
-        ora().fail(`解析出错:\n${e}`)
-      }
-    }
-    for (let i in allRealLinks){
-      result.push(allRealLinks[i])
+    let c0 = 0
+    let pageRealLinks = await getAllLinks()
+    for (let i in pageRealLinks){
+      result.push(pageRealLinks[i])
     }
     prog.succeed(`关键词【${keywords[i]}】查询成功[${parseInt(i)+ 1}/${keywords.length}]`)
+
+    // 其他函数
+
+    function getAllLinks() {
+      return new Promise((resolve, reject) => {
+        for (let i = 0; i < singlePage['urls'].length; i++) {
+          worker(singlePage['urls'][i], singlePage['keyword']).then(res => {
+            c0++
+            if (global.verbose) ora().succeed(`关键词【${singlePage['keyword']}】第${i+1}页真实地址解析成功`)
+            for (let index in res) {
+              allRealLinks.push(res[index])
+            }
+            if (c0 === singlePage['urls'].length) {
+              resolve(allRealLinks)
+            }
+          }).catch(e => {
+              ora().fail(`解析出错:\n${e}`)
+          })
+        }
+      })
+    }
   }
   return result
 }
+
