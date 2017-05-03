@@ -35,7 +35,7 @@ if (prop.url) {
       fs.writeFileSync(keywordsFile, keywords)
     }
     if (prop.verbose) {
-        opt.v = true
+        global.verbose = true
     }
     main(opt)
 } else if (prop.keyword) {
@@ -57,7 +57,7 @@ if (prop.url) {
       }
     }
     if (prop.verbose) {
-        opt.v = true
+        global.verbose = true
     }
     main(opt)
 }
@@ -82,7 +82,7 @@ async function main(opt) {
   let s = ora()
   s.succeed(tip)
   let result = await master(keywordsFile, opt.deep, opt.thread, opt.v)
-  console.log(result)
+  console.log(result.length)
   // let result = []
   // for (let i = 0; i < res.length; i++) {
   //   if (res[i] === 0) {
