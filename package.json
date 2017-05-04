@@ -13,6 +13,7 @@
     "cli-spinners": "^1.0.0",
     "commander": "^2.9.0",
     "iconv-lite": "^0.4.16",
+    "json2csv": "^3.7.3",
     "moment": "^2.18.1",
     "ora": "^1.2.0",
     "urlencode": "^1.1.0"

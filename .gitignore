@@ -3,3 +3,4 @@ node_modules/*
 .vs/*
 err.log
 使用说明.txt
+*.csv

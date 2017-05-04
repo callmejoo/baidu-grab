@@ -12,9 +12,7 @@ const searchUrl = 'http://www.baidu.com/s?ie=utf-8&wd='
 // 爬虫主程序，将每个关键词每页链接分配给worker
 // list:[{keyword, url1, url2, url3, status}, {}...]
 
-module.exports = async function (path, deep, thread, v) {
-  let ori = fs.readFileSync(path).toString()
-  keywords = ori.replace(/^\n|[ ]|[\r]|\n$/g, '').split('\n')
+module.exports = async function (keywords, deep) {
   let [list, result] = [[], []]
 
   // 遍历所有关键词
@@ -39,56 +37,55 @@ module.exports = async function (path, deep, thread, v) {
       let res = []
       try {
         res = await getPage(url1)
-      } catch (e) {
-        ora().fail(`关键词【${keywords[i]}】分页获取错误。`)
-      }
-      if (deep > 8) {
-        deep = 8
-        ora().fail('抓取页数超过限制，已设置为最大值8')
-      }
-      list[i]['deep'] = deep
-      for (let a = 1; a <= deep - 1; a++) {
-        urls.push({ url: engin + res[a], status: 0}) 
-      }
-      list[i]['urls'] = urls
-      if (global.verbose) ora().succeed(`关键词【${keywords[i]}】分页获取成功[${parseInt(i)+1}/${keywords.length}]`)
-    }
+        if (deep > 8) {
+          deep = 8
+          ora().fail('抓取页数超过限制，已设置为最大值8')
+        }
+        list[i]['deep'] = deep
+        for (let a = 1; a <= deep - 1; a++) {
+          urls.push({ url: engin + res[a], status: 0}) 
+        }
+        list[i]['urls'] = urls
+        if (global.verbose) ora().succeed(`关键词【${keywords[i]}】分页获取成功`)
+        
+        // 获取每页所有的真实地址
 
-    // 获取每页所有的真实地址
+        let singlePage = list[i] // Obj：{keyword, urls[{url, status}, ...], status}
+        let allRealLinks = []
+        for (let ii = 0; ii < singlePage['urls'].length; ii++) {
+          if (global.verbose) ora().succeed(`开始解析关键词【${singlePage['keyword']}】第${ii+1}页真实地址`)
+          let realList = await worker(singlePage['urls'][ii], singlePage['keyword'])
+          for (let index in realList) {
 
-    let singlePage = list[i] // Obj：{keyword, urls[{url, status}, ...], status}
-    let allRealLinks = []
-    for (let i = 0; i < singlePage['urls'].length; i++) {
-      try {
-        let realList = await worker(singlePage['urls'][i], singlePage['keyword'])
-        if (global.verbose) ora().succeed(`关键词【${singlePage['keyword']}】真实地址获取成功`)
-        for (let index in realList) {
+            // 检查是否有百度知道链接，如有则获取相关问题。
 
-          // 检查是否有百度知道链接，如有则获取相关问题。
-
-          if (realList[index]['url'].indexOf('zhidao.baidu.com/question') !== -1) {
-            allRealLinks.push(realList[index])
-            let zhidaoAbout = await getZdAbout(realList[index]['url'])
-            for (let p in zhidaoAbout) {
-              allRealLinks.push({
-                name: '【相似问题】' + zhidaoAbout[p]['name'],
-                url: zhidaoAbout[p]['url'],
-                keyword: singlePage['keyword'],
-                status: 1
-              })
+            if (realList[index]['url'].indexOf('zhidao.baidu.com/question') !== -1) {
+              allRealLinks.push(realList[index])
+              let zhidaoAbout = await getZdAbout(realList[index]['url'])
+              for (let p in zhidaoAbout) {
+                allRealLinks.push({
+                  name: '【相似问题】' + zhidaoAbout[p]['name'],
+                  url: zhidaoAbout[p]['url'],
+                  keyword: singlePage['keyword'],
+                  status: 1
+                })
+              }
+            } else {
+              allRealLinks.push(realList[index])
             }
-          } else {
-            allRealLinks.push(realList[index])
           }
         }
+        for (let a in allRealLinks){
+            result.push(allRealLinks[a])
+        }
+        prog.succeed(`关键词【${keywords[i]}】查询完成[${parseInt(i)+ 1}/${keywords.length}]`)
       } catch (e) {
-        ora().fail(`解析出错:\n${e}`)
+        prog.fail(`关键词【${keywords[i]}】解析失败。失败原因：${e}`)
+        global.fail.push({
+          keyword: keywords[i]
+        })
       }
     }
-    for (let i in allRealLinks){
-      result.push(allRealLinks[i])
-    }
-    prog.succeed(`关键词【${keywords[i]}】查询成功[${parseInt(i)+ 1}/${keywords.length}]`)
   }
   return result
 }
