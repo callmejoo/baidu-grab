@@ -78,7 +78,6 @@ async function main(opt) {
   let ori = fs.readFileSync('keywords.txt').toString()
   let keywords = ori.replace(/^\n|[ ]|[\r]|\n$/g, '').split('\n')
   let res = await master(keywords, opt.deep)
-  console.log('master收到结果，存入res成功')
   // 重试解析失败关键词  
 
   if (global.fail[0]) {
@@ -89,7 +88,6 @@ async function main(opt) {
     }
     global.fail = []
     let reRes = await master(fail)
-    console.log('master收到结果，存入reRes成功')
     if (global.fail[0]) {
       hasErr = true
       for (let i in global.fail) {
@@ -100,7 +98,6 @@ async function main(opt) {
     }
     for (let i in reRes) {
       res.push(reRes[i])
-      console.log('res有内容')
     }
   }
   let result = []
