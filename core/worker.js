@@ -5,6 +5,7 @@ const getRealUrl = require('../lib/realUrl')
 // 返回单页所有真实链接
 
 module.exports = async function (pagelink, keyword) {
+  try {
     let pageLinks = await getPageLinks(pagelink['url'])
     let s = 0  // 解析完成数
     return new Promise(resolve => {
@@ -34,4 +35,9 @@ module.exports = async function (pagelink, keyword) {
         })
       }
     })
+  } catch (e) {
+    return new Promise((resovle, reject) => {
+      reject(e)
+    })
+  }
 }
